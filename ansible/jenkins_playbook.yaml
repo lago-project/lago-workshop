@@ -1,0 +1,16 @@
+- hosts: groups=jenkins-masters
+  vars:
+    jenkins_hostname: "{{ ansible_fqdn }}"
+    jenkins_http_port: 8080
+  pre_tasks:
+    - name: install open-jdk 1.8
+      yum:
+        name: java-1.8.0-openjdk.x86_64
+    - name: configure firewalld
+      firewalld:
+        port: "{{ jenkins_http_port }}/tcp"
+        state: enabled
+        immediate: yes
+        permanent: true
+  roles:
+      - roles/geerlingguy.jenkins

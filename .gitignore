@@ -1,0 +1,16 @@
+*.py[co]
+.*.sw[o-z]
+MANIFEST
+dist/
+.idea
+logs*
+mock*
+*ChangeLog
+AUTHORS
+*/*venv
+.bash*
+.cache*
+tags
+cscope.out
+.lago
+ansible_hosts

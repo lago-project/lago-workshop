@@ -1,0 +1,73 @@
+nat-settings: &nat-settings
+    type: nat
+    dhcp:
+      start: 100
+      end: 254
+    management: False
+
+vm-common-settings: &vm-common-settings
+    root-password: 123456
+    service_provider: systemd
+    artifacts:
+      - /var/log
+    disks:
+      - template_name: el7.3-base
+        type: template
+        name: root
+        dev: vda
+        format: qcow2
+    memory: 1024
+
+jenkins-common-settings: &jenkins-common-settings
+    nics:
+      - net: management-net
+      - net: jenkins-internal-net
+
+jenkins-slave-settings: &jenkins-slave-settings
+    <<: *vm-common-settings
+    <<: *jenkins-common-settings
+    groups: [jenkins-slaves]
+    metadata:
+      deploy-scripts:
+          - $LAGO_INITFILE_PATH/deploy-scripts/dummy.sh
+
+domains:
+  jenkins-master:
+    <<: *vm-common-settings
+    <<: *jenkins-common-settings
+    groups: [jenkins-masters]
+    memory: 2048
+    metadata:
+      deploy-scripts:
+        - $LAGO_INITFILE_PATH/deploy-scripts/dummy.sh
+
+  jenkins-slave-0:
+    <<: *jenkins-slave-settings
+
+  jenkins-slave-1:
+    <<: *jenkins-slave-settings
+
+  file-server:
+    <<: *vm-common-settings
+    groups: [file-servers]
+    disks:
+      - template_name: el7.3-base
+        type: template
+        name: root
+        dev: vda
+        format: qcow2
+      - name: storage
+        size: 10G
+        type: empty
+        dev: sda
+        format: raw
+    nics:
+      - net: management-net
+
+nets:
+  management-net:
+    <<: *nat-settings
+    management: true
+    dns_domain_name: lago.local
+  jenkins-internal-net:
+    <<: *nat-settings
