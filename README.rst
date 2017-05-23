@@ -3,7 +3,7 @@ Lago Workshop
 
 About
 ------
-In this workshopt you will learn how to create system tests
+In this workshop you will learn how to create system tests
 for your application using Lago and Pytest.
 
 Prerequisite
