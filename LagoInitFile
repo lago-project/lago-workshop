@@ -27,9 +27,6 @@ jenkins-slave-settings: &jenkins-slave-settings
     <<: *vm-common-settings
     <<: *jenkins-common-settings
     groups: [jenkins-slaves]
-    metadata:
-      deploy-scripts:
-          - $LAGO_INITFILE_PATH/deploy-scripts/dummy.sh
 
 domains:
   jenkins-master:
@@ -43,9 +40,17 @@ domains:
 
   jenkins-slave-0:
     <<: *jenkins-slave-settings
+    metadata:
+      deploy-scripts:
+        - $LAGO_INITFILE_PATH/deploy-scripts/dummy.sh
+      jenkins-label: dev
 
   jenkins-slave-1:
     <<: *jenkins-slave-settings
+    metadata:
+      deploy-scripts:
+        - $LAGO_INITFILE_PATH/deploy-scripts/dummy.sh
+      jenkins-label: qa
 
   file-server:
     <<: *vm-common-settings
