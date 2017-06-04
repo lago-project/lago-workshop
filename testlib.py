@@ -4,47 +4,29 @@ import itertools
 import jenkins
 from six.moves.urllib.request import Request, urlopen
 from six.moves.urllib.parse import quote, urlencode, urljoin, urlparse
+from six.moves.urllib.error import HTTPError, URLError
 import time
+import socket
 
 SHORT_TIMEOUT = 3 * 60
 LONG_TIMEOUT = 10 * 60
 
-def deploy_ansible_playbook(
-        prefix, playbook_path, vars_dict=None,
-        env_vars=None, host_key_checking=False,
-        user='root', **kwargs
-):
 
-    if not env_vars:
-        env_vars = {}
+def deploy_ansible_playbook(env, playbook_path):
 
-    if not host_key_checking:
-        env_vars.update({'ANSIBLE_HOST_KEY_CHECKING': 'False'})
-
-    ansible_instance = lago_ansible.LagoAnsible(prefix)
-
-    if vars_dict:
-        extra_vars = ' '.join(['{}={}'.format(k, v) for k, v in vars_dict.viewitems()])
-    else:
-        extra_vars = ''
-
-    extra_args = list(itertools.chain(*kwargs.viewitems()))
-
-    with ansible_instance.get_inventory_temp_file() as inventory:
+    with env.ansible_inventory_temp_file() as inventory:
         cmd = [
             'ansible-playbook',
             playbook_path,
             '-i',
             inventory.name,
             '-u',
-            user,
-            '-v',
-            '-e',
-            extra_vars,
+            'root',
         ]
-        cmd.extend(extra_args)
 
-        return utils.run_interactive_command(cmd, env=env_vars)
+        return utils.run_interactive_command(
+            cmd, env={'ANSIBLE_HOST_KEY_CHECKING': 'False'}
+        )
 
 
 def create_credentials_on_jenkins(jenkins_api, _uuid):
@@ -64,7 +46,9 @@ def create_credentials_on_jenkins(jenkins_api, _uuid):
             "$class": "com.cloudbees.plugins.credentials.impl.UsernamePasswordCredentialsImpl"
         }
     }''' % _uuid
-    url = jenkins_api._build_url('credentials/store/system/domain/_/createCredentials')
+    url = jenkins_api._build_url(
+        'credentials/store/system/domain/_/createCredentials'
+    )
     request = Request(url, payload, headers)
     jenkins_api.jenkins_open(request)
 
@@ -81,6 +65,35 @@ def has_credentials_on_jenkins(jenkins_api, _uuid):
         return _uuid
     except jenkins.NotFoundException:
         return False
+
+
+def restart_jenkins(jenkins_api):
+    headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+    path = 'restart'
+    url = jenkins_api._build_url(path)
+    payload = '''json={}
+    Submit: Yes
+    '''
+    request = Request(url, payload, headers)
+    try:
+        jenkins_api.jenkins_open(request)
+    except HTTPError as e:
+        if e.code != 503:
+            raise
+
+
+def wait_until_jenkins_is_available(jenkins_api):
+    def _is_jenkins_available():
+        jenkins_api.get_version()
+        return True
+
+    assert_true_within_short(
+        _is_jenkins_available,
+        allowed_exceptions=[
+            jenkins.BadHTTPException, jenkins.JenkinsException,
+            jenkins.TimeoutException, socket.error, URLError
+        ]
+    )
 
 
 def _instance_of_any(obj, cls_list):
