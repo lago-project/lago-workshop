@@ -2,6 +2,10 @@
   vars:
     jenkins_hostname: "{{ ansible_fqdn }}"
     jenkins_http_port: 8080
+    jenkins_plugins: [ssh-slaves]
+    jenkins_admin_username: admin
+    jenkins_admin_password: admin
+    jenkins_home: /var/lib/jenkins
   pre_tasks:
     - name: install open-jdk 1.8
       yum:
@@ -14,3 +18,9 @@
         permanent: true
   roles:
       - roles/geerlingguy.jenkins
+
+- hosts: groups=jenkins-slaves
+  tasks:
+    - name: install open-jdk 1.8
+      yum:
+        name: java-1.8.0-openjdk.x86_64
