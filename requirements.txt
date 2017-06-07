@@ -1,3 +1,4 @@
 python-jenkins
 ansible
 pytest
+ipython

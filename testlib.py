@@ -14,7 +14,7 @@ LONG_TIMEOUT = 10 * 60
 
 def deploy_ansible_playbook(env, playbook_path):
 
-    with env.ansible_inventory_temp_file() as inventory:
+    with env.ansible_inventory_temp_file(keys=['groups']) as inventory:
         cmd = [
             'ansible-playbook',
             playbook_path,

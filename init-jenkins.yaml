@@ -52,23 +52,6 @@ domains:
         - $LAGO_INITFILE_PATH/deploy-scripts/dummy.sh
       jenkins-label: qa
 
-  file-server:
-    <<: *vm-common-settings
-    groups: [file-servers]
-    disks:
-      - template_name: el7.3-base
-        type: template
-        name: root
-        dev: vda
-        format: qcow2
-      - name: storage
-        size: 10G
-        type: empty
-        dev: sda
-        format: raw
-    nics:
-      - net: management-net
-
 nets:
   management-net:
     <<: *nat-settings

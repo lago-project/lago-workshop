@@ -87,11 +87,9 @@ class TestDeployJenkins(object):
         vms = env.get_vms()
         return vms['jenkins-master']
 
+    @pytest.mark.lab_1
     def test_deploy_with_ansible(self, env, jenkins_master):
         """
-        If 'deploy.marker' file does not exist in the env, deploy the env
-        using Ansible and create a marker file on success.
-
         Args:
             env (lago.prefix.Prefix): The env the should be deployed
 
@@ -134,10 +132,7 @@ class TestJenkins(object):
             password=JENKINS_PASSWORD
         )
 
-    @pytest.fixture()
-    def cred_uuid(self, jenkins_api):
-        return testlib.create_credentials_on_jenkins(jenkins_api, CRED_UUID)
-
+    @pytest.mark.lab_2
     def test_basic_api_connection(self, jenkins_api):
         def _test_api():
             user = jenkins_api.get_whoami()
@@ -154,34 +149,18 @@ class TestJenkins(object):
             ]
         )
 
+    @pytest.mark.lab_3
     def test_verify_installed_plugins(self, jenkins_api):
         installed_plugins = jenkins_api.get_plugins()
 
         for plugin in PLUGINS:
             assert plugin in installed_plugins
 
-    def test_create_blank_job(self, jenkins_api):
-        if not jenkins_api.job_exists(BLANK_JOB_1):
-            jenkins_api.create_job(BLANK_JOB_1, jenkins.EMPTY_CONFIG_XML)
+    @pytest.fixture(scope='class')
+    def cred_uuid(self, jenkins_api):
+        return testlib.create_credentials_on_jenkins(jenkins_api, CRED_UUID)
 
-        assert jenkins_api.job_exists(BLANK_JOB_1)
-
-    def test_create_labled_job(self, jenkins_api):
-        if jenkins_api.job_exists(DEV_JOB):
-            return True
-
-        with open(LABELED_JOB_PATH, mode='rt') as f:
-            job_xml = f.read()
-
-        jenkins_api.create_job(DEV_JOB, job_xml)
-
-        assert jenkins_api.job_exists(BLANK_JOB_1)
-
-    def test_throw_exception_on_undefined_job(self, jenkins_api):
-
-        with pytest.raises(jenkins.JenkinsException):
-            jenkins_api.get_job_info('undefined_job')
-
+    @pytest.mark.lab_4
     def test_add_slaves(self, jenkins_api, env, cred_uuid):
         def add_slave(hostname, label):
             if jenkins_api.node_exists(hostname):
@@ -221,10 +200,29 @@ class TestJenkins(object):
             testlib.assert_true_within_short(
                 functools.partial(jenkins_api.node_exists, slave)
             )
+            testlib.assert_true_within_short(
+                lambda: not jenkins_api.get_node_info(slave)['offline']
+            )
 
-    def test_trigger_blank_job(self, jenkins_api):
-        jenkins_api.build_job(BLANK_JOB_1)
+    @pytest.mark.lab_5
+    def test_throw_exception_on_undefined_job(self, jenkins_api):
 
+        with pytest.raises(jenkins.JenkinsException):
+            jenkins_api.get_job_info('undefined_job')
+
+    @pytest.mark.lab_5
+    def test_create_labled_job(self, jenkins_api):
+        if jenkins_api.job_exists(DEV_JOB):
+            return True
+
+        with open(LABELED_JOB_PATH, mode='rt') as f:
+            job_xml = f.read()
+
+        jenkins_api.create_job(DEV_JOB, job_xml)
+
+        assert jenkins_api.job_exists(DEV_JOB)
+
+    @pytest.mark.lab_6
     def test_trigger_labeled_job(self, jenkins_api, env):
         labeled_nodes = [
             vm.name() for vm in env.get_vms().viewvalues()
@@ -234,17 +232,11 @@ class TestJenkins(object):
         next_build_number = dev_job_info['nextBuildNumber']
         jenkins_api.build_job(DEV_JOB)
 
-        def has_running_build():
-            running_builds = jenkins_api.get_running_builds()
-            return len(running_builds) == 0
-
         def assert_job_run_on_labeled_slave(
             job, build_number, optional_slaves
         ):
             build_info = jenkins_api.get_build_info(job, build_number)
             assert build_info['builtOn'] in optional_slaves
-
-        testlib.assert_true_within_short(has_running_build)
 
         testlib.allow_exceptions_within_short(
             functools.partial(
@@ -253,6 +245,7 @@ class TestJenkins(object):
             ), [jenkins.NotFoundException]
         )
 
+    @pytest.mark.lab_7
     def test_collect_and_verify_artifacts_from_master(self, env, tmpdir):
         local_artifact_path = os.path.join(str(tmpdir), 'dummy_artifact')
         jenkins_master_vm = env.get_vms()['jenkins-master']
@@ -266,3 +259,14 @@ class TestJenkins(object):
             result = f.read()
 
         assert result.rstrip() == 'welcome to pycon israel'
+
+    @pytest.mark.lab_8
+    def test_create_blank_job(self, jenkins_api):
+        if not jenkins_api.job_exists(BLANK_JOB_1):
+            jenkins_api.create_job(BLANK_JOB_1, jenkins.EMPTY_CONFIG_XML)
+
+        assert jenkins_api.job_exists(BLANK_JOB_1)
+
+    @pytest.mark.lab_8
+    def test_trigger_blank_job(self, jenkins_api):
+        jenkins_api.build_job(BLANK_JOB_1)
