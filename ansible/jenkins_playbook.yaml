@@ -2,7 +2,6 @@
   vars:
     jenkins_hostname: "{{ ansible_fqdn }}"
     jenkins_http_port: 8080
-    jenkins_plugins: [ssh-slaves]
     jenkins_admin_username: admin
     jenkins_admin_password: admin
     jenkins_home: /var/lib/jenkins
@@ -18,6 +17,47 @@
         permanent: true
   roles:
       - roles/geerlingguy.jenkins
+  tasks:
+    - name: trigger_wait_for_jenkins
+      command: echo ""
+      notify:
+        - wait_for_jenkins
+        - sleep
+
+  post_tasks:
+    - name: install-plugins-custom
+      jenkins_plugin:
+        name: "{{ item }}"
+        params:
+          url_username: "{{ jenkins_admin_username }}"
+          url_password: "{{ jenkins_admin_password }}"
+        url: "http://localhost:{{ jenkins_http_port }}"
+        timeout: 60
+      with_items: [ssh-slaves]
+      notify:
+        - sleep
+        - my_jenkins_restart
+        - wait_for_jenkins
+
+  handlers:
+    - name: sleep
+      local_action: wait_for timeout=120
+    - name: my_jenkins_restart
+      service:
+        name: jenkins
+        state: restarted
+    - name: wait_for_jenkins
+      uri:
+        url: "http://localhost:{{ jenkins_http_port }}"
+        status_code: 200
+        timeout: 5
+      register: jenkins_service_status
+      # Keep trying for 5 mins in 5 sec intervals
+      retries: 60
+      delay: 5
+      until: >
+         'status' in jenkins_service_status and
+         jenkins_service_status['status'] == 200
 
 - hosts: groups=jenkins-slaves
   tasks:
