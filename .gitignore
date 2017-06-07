@@ -14,5 +14,5 @@ tags
 cscope.out
 .lago
 ansible_hosts
-ansible/*.retry
+**/*.retry
 test_results

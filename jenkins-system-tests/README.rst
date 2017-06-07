@@ -15,7 +15,6 @@ The environment
     - jenkins-slave-1
 - Networks:
     - management-net (All the vms are connected)
-    - jenkins-internal-net (Only jenkins-* vms are connected)
 
 Running the tests
 -----------------
