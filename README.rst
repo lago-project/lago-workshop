@@ -12,7 +12,9 @@ Prerequisite
 - Create a virtual env which includes the system's libraries and the deps in requirements.txt,
   this can be done using the following commands::
 
-    virtualenv --system-site-packages lago_venv
+     su - <user>
+     git clone https://github.com/lago-project/lago-workshop
+     virtualenv --system-site-packages lago_venv
      source lago_venv/bin/activate
      pip install -I -r requirements.txt
 
@@ -34,8 +36,9 @@ Run the following commands::
 
     lago init
      lago start
-     lago ansible_hosts > ansible_hosts
-     ansible-playbook ansible/jenkins_playbook.yaml -i ansible_hosts  -u root
+     python -m pytest -s -v -x test_jenkins.py
+#    lago ansible_hosts > ansible_hosts
+#     ansible-playbook ansible/jenkins_playbook.yaml -i ansible_hosts  -u root
 
 | At the end of this process you can access jenkins from your browser.
 | The deployment takes about 10 minutes.
