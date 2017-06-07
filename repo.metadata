@@ -1,0 +1,247 @@
+{
+    "name": "phx_repo",
+    "sources": {
+        "ci-templates-vm": {
+            "args": {
+                "baseurl": "http://templates.ovirt.org/repo/"
+            },
+            "type": "http"
+        }
+    },
+    "templates": {
+        "centos6_engine": {
+            "versions": {
+                "v1": {
+                    "handle": "centos6/engine/v1.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                },
+                "v2": {
+                    "handle": "centos6/engine/v2.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1432217222
+                }
+            }
+        },
+        "centos6_host": {
+            "versions": {
+                "v1": {
+                    "handle": "centos6/host/v1.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                },
+                "v2": {
+                    "handle": "centos6/host/v2.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1432217222
+                }
+            }
+        },
+        "centos7_docker_host": {
+            "versions": {
+                "v1": {
+                    "handle": "centos7/host/centos7-container-tpl.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                }
+            }
+        },
+        "centos7_engine": {
+            "versions": {
+                "v1": {
+                    "handle": "centos7/engine/v1.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                },
+                "v2": {
+                    "handle": "centos7/engine/v2.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1432217222
+                },
+                "v4": {
+                    "handle": "centos7/engine/v4.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1438179094
+                }
+            }
+        },
+        "centos7_host": {
+            "versions": {
+                "v1": {
+                    "handle": "centos7/host/v1.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                },
+                "v2": {
+                    "handle": "centos7/host/v2.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1432217222
+                },
+                "v4": {
+                    "handle": "centos7/host/v4.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1438179094
+                }
+            }
+        },
+        "debian8-base": {
+            "versions": {
+                "latest": {
+                    "handle": "debian8-base",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1496155386.03924
+                }
+            }
+        },
+        "el6-base": {
+            "versions": {
+                "latest": {
+                    "handle": "el6-base",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                }
+            }
+        },
+        "el7-base": {
+            "versions": {
+                "latest": {
+                    "handle": "el7-base",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                }
+            }
+        },
+        "el7.3-base": {
+            "versions": {
+                "v1": {
+                    "handle": "el7.3-base",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1483295849.820523
+                }
+            }
+        },
+        "fc23-base": {
+            "versions": {
+                "latest": {
+                    "handle": "fc23-base",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                }
+            }
+        },
+        "fc24-base": {
+            "versions": {
+                "latest": {
+                    "handle": "fc24-base",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1469608322.1482499
+                }
+            }
+        },
+        "fc25-base": {
+            "versions": {
+                "latest": {
+                    "handle": "fc25-base",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1496006350.6957285
+                }
+            }
+        },
+        "fedora21_host": {
+            "versions": {
+                "v1": {
+                    "handle": "fedora21/host/v1.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1438263858
+                },
+                "v2": {
+                    "handle": "fedora21/host/v2.qcow2",
+                    "source": "ci-templates-vm:::",
+                    "timestamp": 1438699227
+                }
+            }
+        },
+        "fedora22_host": {
+            "versions": {
+                "v1": {
+                    "handle": "fedora22/host/v1.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1438263325
+                },
+                "v2": {
+                    "handle": "fedora22/host/v2.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1438699227
+                }
+            }
+        },
+        "fedora23_host": {
+            "versions": {
+                "v1": {
+                    "handle": "fedora23/host/v1.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1438263325
+                }
+            }
+        },
+        "rhel7_engine": {
+            "versions": {
+                "v1": {
+                    "handle": "rhel7/engine/v1.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                }
+            }
+        },
+        "rhel7_host": {
+            "versions": {
+                "v1": {
+                    "handle": "rhel7/host/v1.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                }
+            }
+        },
+        "storage-iscsi": {
+            "versions": {
+                "v1": {
+                    "handle": "fedora20/storage-iscsi/v1.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                }
+            }
+        },
+        "storage-nfs": {
+            "versions": {
+                "v1": {
+                    "handle": "fedora20/storage-nfs/v1.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                }
+            }
+        },
+        "storage-nfs-export": {
+            "versions": {
+                "v1": {
+                    "handle": "fedora20/storage-nfs-export/v1.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                },
+                "v2": {
+                    "handle": "fedora20/storage-nfs-export/v2.qcow2",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1428328144
+                }
+            }
+        },
+        "ubuntu16.04-base": {
+            "versions": {
+                "latest": {
+                    "handle": "ubuntu16.04-base",
+                    "source": "ci-templates-vm",
+                    "timestamp": 1495806113.2519019
+                }
+            }
+        }
+    }
+}

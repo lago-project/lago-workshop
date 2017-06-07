@@ -34,22 +34,15 @@ domains:
     <<: *jenkins-common-settings
     groups: [jenkins-masters]
     memory: 2048
-    metadata:
-      deploy-scripts:
-        - $LAGO_INITFILE_PATH/deploy-scripts/dummy.sh
 
   jenkins-slave-0:
     <<: *jenkins-slave-settings
     metadata:
-      deploy-scripts:
-        - $LAGO_INITFILE_PATH/deploy-scripts/dummy.sh
       jenkins-label: dev
 
   jenkins-slave-1:
     <<: *jenkins-slave-settings
     metadata:
-      deploy-scripts:
-        - $LAGO_INITFILE_PATH/deploy-scripts/dummy.sh
       jenkins-label: qa
 
 nets:

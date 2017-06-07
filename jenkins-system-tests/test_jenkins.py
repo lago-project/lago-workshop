@@ -1,6 +1,5 @@
 import pytest
 import jenkins
-import lago.workdir
 import lago.utils
 from lago.workdir import PrefixAlreadyExists
 from lago import sdk
@@ -9,79 +8,55 @@ import testlib
 import functools
 import scp
 import logging
-import shutil
 
-JENKINS_PORT = 8080
-JENKINS_USERNAME = 'admin'
-JENKINS_PASSWORD = 'admin'
 
-BLANK_JOB_1 = 'blank_job_1'
-DEV_JOB = 'dev_job'
-DEV_LABEL = 'dev'
-QA_JOB = 'qa_job'
-QA_LABEL = 'qa'
+class Job:
+    def __init__(self, name, label=None, xml_path=None):
+        self.name = name
+        self.label = label
+        self.xml_path = xml_path
 
-LABELS = (DEV_LABEL, QA_LABEL)
-PLUGINS = ('ssh-slaves', )
-
-CRED_UUID = '5fa49f22-298f-4894-b4b0-b2b5d812f5e0'
-LABELED_JOB_PATH = 'jobs/labeled_job.xml'
-DEV_JOB_ARTIFACTS_PATH = '/var/lib/jenkins/jobs/dev_job/lastSuccessful/archive/dummy_artifact'
+    @property
+    def latest_art_path(self):
+        return '/var/lib/jenkins/jobs/{}/lastSuccessful/archive/'.format(self.name)
 
 
 @pytest.fixture(scope='module')
-def module_results_path(request):
-    current_dir = os.path.abspath(os.getcwd())
-    results_path = os.path.join(
-        current_dir, 'test_results', str(request.module.__name__)
-    )
-    if os.path.isdir(results_path):
-        shutil.rmtree(results_path)
-
-    os.makedirs(results_path)
-
-    return results_path
+def jenkins_info():
+    return {
+        'port': 8080,
+        'username': 'admin',
+        'password': 'admin'
+    }
 
 
 @pytest.fixture(scope='class')
-def cls_results_path(request, module_results_path):
-    results_path = os.path.join(module_results_path, str(request.cls.__name__))
-    os.makedirs(results_path)
+def env(cls_results_path):
+    config = 'init-jenkins.yaml'
+    workdir = '/tmp/lago-workdir'
 
-    return results_path
-
-
-@pytest.fixture(scope='function')
-def func_results_path(request, cls_results_path):
-    results_path = os.path.join(
-        cls_results_path, str(request.function.__name__)
-    )
-    os.makedirs(results_path)
-
-    return results_path
-
-
-class TestDeployJenkins(object):
-    @pytest.fixture(scope='class')
-    def env(self, cls_results_path):
-        config = 'init-jenkins.yaml'
-        workdir = '/tmp/lago-workdir'
-
+    try:
         lago_env = sdk.init(
             config=config,
             workdir=workdir,
             logfile=os.path.join(cls_results_path, 'lago.log'),
             loglevel=logging.DEBUG
         )
-        lago_env.start()
+    except PrefixAlreadyExists:
+        lago_env = sdk.load_env(
+            workdir=workdir,
+            logfile=os.path.join(cls_results_path, 'lago.log'),
+            loglevel=logging.DEBUG
+        )
+    lago_env.start()
 
-        yield lago_env
+    yield lago_env
 
-        collect_path = os.path.join(cls_results_path, 'collect')
-        lago_env.collect_artifacts(output_dir=collect_path, ignore_nopath=True)
+    collect_path = os.path.join(cls_results_path, 'collect')
+    lago_env.collect_artifacts(output_dir=collect_path, ignore_nopath=True)
 
-        # lago_env.destroy()
 
+class TestDeployJenkins(object):
     @pytest.fixture
     def jenkins_master(self, env):
         vms = env.get_vms()
@@ -89,11 +64,6 @@ class TestDeployJenkins(object):
 
     @pytest.mark.lab_1
     def test_deploy_with_ansible(self, env, jenkins_master):
-        """
-        Args:
-            env (lago.prefix.Prefix): The env the should be deployed
-
-        """
         jenkins_master.ssh_reachable(tries=100)
         result = testlib.deploy_ansible_playbook(
             env, 'ansible/jenkins_playbook.yaml'
@@ -105,31 +75,46 @@ class TestDeployJenkins(object):
 
 class TestJenkins(object):
     @pytest.fixture(scope='class')
-    def env(self, cls_results_path):
-        workdir = '/tmp/lago-workdir'
+    def jobs(self):
+        return {
+            'blank_job': Job('blank_job'),
+            'dev_job': Job('dev_job', label='dev', xml_path='jobs/labeled_job.xml'),
+            'qa_job': Job('qa_job', label='qa')
+        }
 
-        lago_env = sdk.load_env(
-            workdir=workdir,
-            logfile=os.path.join(cls_results_path, 'lago.log'),
-            loglevel=logging.DEBUG
+    @pytest.fixture(scope='class')
+    def dev_job(self, jobs):
+        return jobs['dev_job']
+
+    @pytest.fixture(scope='class')
+    def blank_job(self, jobs):
+        return jobs['blank_job']
+
+    @pytest.fixture(scope='class')
+    def labels(self, jobs):
+        return sorted(
+            map(lambda job: job.label, jobs.values())
         )
 
-        yield lago_env
+    @pytest.fixture(scope='class')
+    def plugins(self):
+        return ['ssh-slaves']
 
-        collect_path = os.path.join(cls_results_path, 'collect')
-        lago_env.collect_artifacts(output_dir=collect_path, ignore_nopath=True)
-
-        # lago_env.destroy()
+    @pytest.fixture(scope='class')
+    def cred_uuid(self, jenkins_api):
+        return testlib.create_credentials_on_jenkins(
+            jenkins_api, '5fa49f22-298f-4894-b4b0-b2b5d812f5e0'
+        )
 
     @pytest.fixture('class')
-    def jenkins_api(self, env):
+    def jenkins_api(self, env, jenkins_info):
         jenkins_master_vm = env.get_vms()['jenkins-master']
         return jenkins.Jenkins(
             'http://{ip}:{port}'.format(
-                ip=jenkins_master_vm.ip(), port=JENKINS_PORT
+                ip=jenkins_master_vm.ip(), port=jenkins_info['port']
             ),
-            username=JENKINS_USERNAME,
-            password=JENKINS_PASSWORD
+            username=jenkins_info['username'],
+            password=jenkins_info['password']
         )
 
     @pytest.mark.lab_2
@@ -150,15 +135,11 @@ class TestJenkins(object):
         )
 
     @pytest.mark.lab_3
-    def test_verify_installed_plugins(self, jenkins_api):
+    def test_verify_installed_plugins(self, jenkins_api, plugins):
         installed_plugins = jenkins_api.get_plugins()
 
-        for plugin in PLUGINS:
+        for plugin in plugins:
             assert plugin in installed_plugins
-
-    @pytest.fixture(scope='class')
-    def cred_uuid(self, jenkins_api):
-        return testlib.create_credentials_on_jenkins(jenkins_api, CRED_UUID)
 
     @pytest.mark.lab_4
     def test_add_slaves(self, jenkins_api, env, cred_uuid):
@@ -206,31 +187,30 @@ class TestJenkins(object):
 
     @pytest.mark.lab_5
     def test_throw_exception_on_undefined_job(self, jenkins_api):
-
         with pytest.raises(jenkins.JenkinsException):
             jenkins_api.get_job_info('undefined_job')
 
     @pytest.mark.lab_5
-    def test_create_labled_job(self, jenkins_api):
-        if jenkins_api.job_exists(DEV_JOB):
+    def test_create_labled_job(self, jenkins_api, dev_job):
+        if jenkins_api.job_exists(dev_job.name):
             return True
 
-        with open(LABELED_JOB_PATH, mode='rt') as f:
+        with open(dev_job.xml_path, mode='rt') as f:
             job_xml = f.read()
 
-        jenkins_api.create_job(DEV_JOB, job_xml)
+        jenkins_api.create_job(dev_job.name, job_xml)
 
-        assert jenkins_api.job_exists(DEV_JOB)
+        assert jenkins_api.job_exists(dev_job.name)
 
     @pytest.mark.lab_6
-    def test_trigger_labeled_job(self, jenkins_api, env):
+    def test_trigger_labeled_job(self, jenkins_api, env, dev_job):
         labeled_nodes = [
             vm.name() for vm in env.get_vms().viewvalues()
-            if vm.metadata.get('jenkins-label') == DEV_LABEL
+            if vm.metadata.get('jenkins-label') == dev_job.label
         ]
-        dev_job_info = jenkins_api.get_job_info(DEV_JOB)
+        dev_job_info = jenkins_api.get_job_info(dev_job.name)
         next_build_number = dev_job_info['nextBuildNumber']
-        jenkins_api.build_job(DEV_JOB)
+        jenkins_api.build_job(dev_job.name)
 
         def assert_job_run_on_labeled_slave(
             job, build_number, optional_slaves
@@ -240,17 +220,18 @@ class TestJenkins(object):
 
         testlib.allow_exceptions_within_short(
             functools.partial(
-                assert_job_run_on_labeled_slave, DEV_JOB, next_build_number,
+                assert_job_run_on_labeled_slave, dev_job.name, next_build_number,
                 labeled_nodes
             ), [jenkins.NotFoundException]
         )
 
     @pytest.mark.lab_7
-    def test_collect_and_verify_artifacts_from_master(self, env, tmpdir):
+    def test_collect_and_verify_artifacts_from_master(self, tmpdir, env, dev_job):
         local_artifact_path = os.path.join(str(tmpdir), 'dummy_artifact')
         jenkins_master_vm = env.get_vms()['jenkins-master']
         f = functools.partial(
-            jenkins_master_vm.copy_from, DEV_JOB_ARTIFACTS_PATH,
+            jenkins_master_vm.copy_from,
+            os.path.join(dev_job.latest_art_path, 'dummy_artifact'),
             local_artifact_path
         )
         testlib.allow_exceptions_within_short(f, [scp.SCPException])
@@ -261,12 +242,12 @@ class TestJenkins(object):
         assert result.rstrip() == 'welcome to pycon israel'
 
     @pytest.mark.lab_8
-    def test_create_blank_job(self, jenkins_api):
-        if not jenkins_api.job_exists(BLANK_JOB_1):
-            jenkins_api.create_job(BLANK_JOB_1, jenkins.EMPTY_CONFIG_XML)
+    def test_create_blank_job(self, jenkins_api, blank_job):
+        if not jenkins_api.job_exists(blank_job.name):
+            jenkins_api.create_job(blank_job.name, jenkins.EMPTY_CONFIG_XML)
 
-        assert jenkins_api.job_exists(BLANK_JOB_1)
+        assert jenkins_api.job_exists(blank_job.name)
 
     @pytest.mark.lab_8
-    def test_trigger_blank_job(self, jenkins_api):
-        jenkins_api.build_job(BLANK_JOB_1)
+    def test_trigger_blank_job(self, jenkins_api, blank_job):
+        jenkins_api.build_job(blank_job.name)
