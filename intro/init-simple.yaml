@@ -1,0 +1,17 @@
+domains:
+  vm-01:
+    memory: 1024
+    nics:
+      - net: net-01
+    disks:
+      - template_name: el7.3-base
+        type: template
+        name: root
+        dev: sda
+        format: qcow2
+nets:
+  net-01:
+    type: nat
+    dhcp:
+      start: 100
+      end: 254

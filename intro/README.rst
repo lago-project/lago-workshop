@@ -1,0 +1,1 @@
+Simple usage of Lago and Pytest.
