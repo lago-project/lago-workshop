@@ -8,6 +8,12 @@ import testlib
 import functools
 import scp
 import logging
+'''
+
+In order to run this tests cd into jenkins-system-tests and run:
+    python -m pytest -s -v -x ../solutions/test_jenkins.py
+
+'''
 
 
 class Job:
@@ -18,16 +24,14 @@ class Job:
 
     @property
     def latest_art_path(self):
-        return '/var/lib/jenkins/jobs/{}/lastSuccessful/archive/'.format(self.name)
+        return '/var/lib/jenkins/jobs/{}/lastSuccessful/archive/'.format(
+            self.name
+        )
 
 
 @pytest.fixture(scope='module')
 def jenkins_info():
-    return {
-        'port': 8080,
-        'username': 'admin',
-        'password': 'admin'
-    }
+    return {'port': 8080, 'username': 'admin', 'password': 'admin'}
 
 
 @pytest.fixture(scope='class')
@@ -56,12 +60,13 @@ def env(cls_results_path):
     lago_env.collect_artifacts(output_dir=collect_path, ignore_nopath=True)
 
 
-class TestDeployJenkins(object):
-    @pytest.fixture
-    def jenkins_master(self, env):
-        vms = env.get_vms()
-        return vms['jenkins-master']
+@pytest.fixture(scope='class')
+def jenkins_master(env):
+    vms = env.get_vms()
+    return vms['jenkins-master']
 
+
+class TestDeployJenkins(object):
     @pytest.mark.lab_1
     def test_deploy_with_ansible(self, env, jenkins_master):
         jenkins_master.ssh_reachable(tries=100)
@@ -77,9 +82,12 @@ class TestJenkins(object):
     @pytest.fixture(scope='class')
     def jobs(self):
         return {
-            'blank_job': Job('blank_job'),
-            'dev_job': Job('dev_job', label='dev', xml_path='jobs/labeled_job.xml'),
-            'qa_job': Job('qa_job', label='qa')
+            'blank_job':
+                Job('blank_job'),
+            'dev_job':
+                Job('dev_job', label='dev', xml_path='jobs/labeled_job.xml'),
+            'qa_job':
+                Job('qa_job', label='qa')
         }
 
     @pytest.fixture(scope='class')
@@ -92,9 +100,7 @@ class TestJenkins(object):
 
     @pytest.fixture(scope='class')
     def labels(self, jobs):
-        return sorted(
-            map(lambda job: job.label, jobs.values())
-        )
+        return sorted(map(lambda job: job.label, jobs.values()))
 
     @pytest.fixture(scope='class')
     def plugins(self):
@@ -107,22 +113,28 @@ class TestJenkins(object):
         )
 
     @pytest.fixture('class')
-    def jenkins_api(self, env, jenkins_info):
-        jenkins_master_vm = env.get_vms()['jenkins-master']
+    def jenkins_api(self, env, jenkins_info, jenkins_master):
         return jenkins.Jenkins(
             'http://{ip}:{port}'.format(
-                ip=jenkins_master_vm.ip(), port=jenkins_info['port']
+                ip=jenkins_master.ip(), port=jenkins_info['port']
             ),
             username=jenkins_info['username'],
             password=jenkins_info['password']
         )
 
     @pytest.mark.lab_2
-    def test_basic_api_connection(self, jenkins_api):
+    def test_basic_api_connection(
+        self, jenkins_api, jenkins_master, jenkins_info
+    ):
         def _test_api():
             user = jenkins_api.get_whoami()
             version = jenkins_api.get_version()
             print('Hello {} from Jenkins {}'.format(user['fullName'], version))
+            print(
+                'You can access the web UI with:\nhttp://{}:{}'.format(
+                    jenkins_master.ip(), jenkins_info['port']
+                )
+            )
 
             return True
 
@@ -220,17 +232,18 @@ class TestJenkins(object):
 
         testlib.allow_exceptions_within_short(
             functools.partial(
-                assert_job_run_on_labeled_slave, dev_job.name, next_build_number,
-                labeled_nodes
+                assert_job_run_on_labeled_slave, dev_job.name,
+                next_build_number, labeled_nodes
             ), [jenkins.NotFoundException]
         )
 
     @pytest.mark.lab_6
-    def test_collect_and_verify_artifacts_from_master(self, tmpdir, env, dev_job):
+    def test_collect_and_verify_artifacts_from_master(
+        self, tmpdir, env, jenkins_master, dev_job
+    ):
         local_artifact_path = os.path.join(str(tmpdir), 'dummy_artifact')
-        jenkins_master_vm = env.get_vms()['jenkins-master']
         f = functools.partial(
-            jenkins_master_vm.copy_from,
+            jenkins_master.copy_from,
             os.path.join(dev_job.latest_art_path, 'dummy_artifact'),
             local_artifact_path
         )
