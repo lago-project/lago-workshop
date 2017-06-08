@@ -2,3 +2,4 @@ python-jenkins
 ansible
 pytest
 ipython
+jupyter
