@@ -21,7 +21,6 @@ vm-common-settings: &vm-common-settings
 jenkins-common-settings: &jenkins-common-settings
     nics:
       - net: management-net
-      - net: jenkins-internal-net
 
 jenkins-slave-settings: &jenkins-slave-settings
     <<: *vm-common-settings
@@ -50,5 +49,4 @@ nets:
     <<: *nat-settings
     management: true
     dns_domain_name: lago.local
-  jenkins-internal-net:
-    <<: *nat-settings
+
