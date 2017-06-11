@@ -16,24 +16,6 @@ In order to run this tests cd into jenkins-system-tests and run:
 '''
 
 
-class Job:
-    def __init__(self, name, label=None, xml_path=None):
-        self.name = name
-        self.label = label
-        self.xml_path = xml_path
-
-    @property
-    def latest_art_path(self):
-        return '/var/lib/jenkins/jobs/{}/lastSuccessful/archive/'.format(
-            self.name
-        )
-
-
-@pytest.fixture(scope='module')
-def jenkins_info():
-    return {'port': 8080, 'username': 'admin', 'password': 'admin'}
-
-
 @pytest.fixture(scope='class')
 def env(cls_results_path):
     config = 'init-jenkins.yaml'
@@ -56,8 +38,11 @@ def env(cls_results_path):
 
     yield lago_env
 
+    # Task: Add log collection. The logs should be collected to a
+    # sub directory of 'cls_result_path
     collect_path = os.path.join(cls_results_path, 'collect')
     lago_env.collect_artifacts(output_dir=collect_path, ignore_nopath=True)
+    # EndTask
 
 
 @pytest.fixture(scope='class')
@@ -66,10 +51,30 @@ def jenkins_master(env):
     return vms['jenkins-master']
 
 
+@pytest.fixture(scope='module')
+def jenkins_info():
+    return {'port': 8080, 'username': 'admin', 'password': 'admin'}
+
+
+class Job:
+    def __init__(self, name, label=None, xml_path=None):
+        self.name = name
+        self.label = label
+        self.xml_path = xml_path
+
+    @property
+    def latest_art_path(self):
+        return '/var/lib/jenkins/jobs/{}/lastSuccessful/archive/'.format(
+            self.name
+        )
+
+
 class TestDeployJenkins(object):
-    @pytest.mark.lab_1
+    @pytest.mark.lab_2
     def test_deploy_with_ansible(self, env, jenkins_master):
+        # Task: verify that jenkins_master is reachable through ssh
         jenkins_master.ssh_reachable(tries=100)
+        # EndTask
         result = testlib.deploy_ansible_playbook(
             env, 'ansible/jenkins_playbook.yaml'
         )
@@ -113,16 +118,19 @@ class TestJenkins(object):
         )
 
     @pytest.fixture('class')
-    def jenkins_api(self, env, jenkins_info, jenkins_master):
+    def jenkins_api(self, jenkins_info, jenkins_master):
+        # Task: Get jenkins master ip and assign it to a variable called jenkins_master_ip
+        jenkins_master_ip = jenkins_master.ip()
+        # EndTask
         return jenkins.Jenkins(
             'http://{ip}:{port}'.format(
-                ip=jenkins_master.ip(), port=jenkins_info['port']
+                ip=jenkins_master_ip, port=jenkins_info['port']
             ),
             username=jenkins_info['username'],
             password=jenkins_info['password']
         )
 
-    @pytest.mark.lab_2
+    @pytest.mark.lab_3
     def test_basic_api_connection(
         self, jenkins_api, jenkins_master, jenkins_info
     ):
@@ -138,22 +146,27 @@ class TestJenkins(object):
 
             return True
 
+        allowed_exceptions = [
+            jenkins.BadHTTPException, jenkins.JenkinsException,
+            jenkins.TimeoutException
+        ]
+
+        # Task: assert _test_api ends successfully within a short timeout
+        # allowing 'allowed_exceptions'
         testlib.assert_true_within_short(
             _test_api,
-            allowed_exceptions=[
-                jenkins.BadHTTPException, jenkins.JenkinsException,
-                jenkins.TimeoutException
-            ]
+            allowed_exceptions=allowed_exceptions
         )
+        # EndTask
 
-    @pytest.mark.lab_3
+    @pytest.mark.lab_4
     def test_verify_installed_plugins(self, jenkins_api, plugins):
         installed_plugins = jenkins_api.get_plugins()
 
         for plugin in plugins:
             assert plugin in installed_plugins
 
-    @pytest.mark.lab_3
+    @pytest.mark.lab_4
     def test_add_slaves(self, jenkins_api, env, cred_uuid):
         def add_slave(hostname, label):
             if jenkins_api.node_exists(hostname):
@@ -178,11 +191,15 @@ class TestJenkins(object):
 
             return True
 
+        # Task: Create a list of tuples where each tuple contains
+        # a vm name and it's jenkins label, for example (vm-0, dev)
+        # Recall that only vms in group 'jenkins-slaves' has a label
         slaves_and_labels = [
             (vm.name(), vm.metadata.get('jenkins-label'))
             for vm in env.get_vms().viewvalues()
             if 'jenkins-slaves' in vm.groups
         ]
+        # EndTask
 
         vec = lago.utils.func_vector(add_slave, slaves_and_labels)
         vt = lago.utils.VectorThread(vec)
@@ -197,12 +214,12 @@ class TestJenkins(object):
                 lambda: not jenkins_api.get_node_info(slave)['offline']
             )
 
-    @pytest.mark.lab_4
+    @pytest.mark.lab_5
     def test_throw_exception_on_undefined_job(self, jenkins_api):
         with pytest.raises(jenkins.JenkinsException):
             jenkins_api.get_job_info('undefined_job')
 
-    @pytest.mark.lab_4
+    @pytest.mark.lab_5
     def test_create_labled_job(self, jenkins_api, dev_job):
         if jenkins_api.job_exists(dev_job.name):
             return True
@@ -230,23 +247,37 @@ class TestJenkins(object):
             build_info = jenkins_api.get_build_info(job, build_number)
             assert build_info['builtOn'] in optional_slaves
 
+        allowed_exceptions = [jenkins.NotFoundException]
+
+        # Task: invoke 'assert_job_run_on_labeled_slave' and allow
+        # it to throw exceptions within a short timeout.
+        # The allowed exceptions are the ones who are in 'allowed exceptions'
+        # Hint: Use functools.partial
         testlib.allow_exceptions_within_short(
             functools.partial(
                 assert_job_run_on_labeled_slave, dev_job.name,
                 next_build_number, labeled_nodes
-            ), [jenkins.NotFoundException]
+            ), allowed_exceptions=allowed_exceptions
         )
+        # EndTask
 
     @pytest.mark.lab_6
     def test_collect_and_verify_artifacts_from_master(
-        self, tmpdir, env, jenkins_master, dev_job
+        self, tmpdir, jenkins_master, dev_job
     ):
         local_artifact_path = os.path.join(str(tmpdir), 'dummy_artifact')
+        remote_artifact_path = os.path.join(dev_job.latest_art_path, 'dummy_artifact')
+
+        # Task: Create a function which copies the artifacts from 'remote_artifact_path'
+        # on jenkins_master to 'local_artifact_path'
+        # Hint: Use functools.partial and the instance method 'copy_from'
         f = functools.partial(
             jenkins_master.copy_from,
-            os.path.join(dev_job.latest_art_path, 'dummy_artifact'),
+            remote_artifact_path,
             local_artifact_path
         )
+        # EndTask
+
         testlib.allow_exceptions_within_short(f, [scp.SCPException])
 
         with open(local_artifact_path, mode='rt') as f:
