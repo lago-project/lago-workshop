@@ -14,7 +14,8 @@ function update_sys() {
 function install_deps() {
     sudo dnf install -y gcc python2 python2-devel python2-epi \
             firefox python2-virtualenvwrapper python2-tox \
-            python2-virtualenv git powerline vim-powerline openssl-devel
+            python2-virtualenv git powerline vim-powerline openssl-devel \
+            tree
 
     sudo dnf copr enable -y heikoada/terminix
     sudo dnf install -y tilix
