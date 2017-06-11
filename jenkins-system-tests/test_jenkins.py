@@ -8,6 +8,51 @@ import testlib
 import functools
 import scp
 import logging
+'''
+
+In order to run this tests cd into jenkins-system-tests and run:
+    python -m pytest -s -v -x ../solutions/test_jenkins.py
+
+'''
+
+
+@pytest.fixture(scope='class')
+def env(cls_results_path):
+    config = 'init-jenkins.yaml'
+    workdir = '/tmp/lago-workdir'
+
+    try:
+        lago_env = sdk.init(
+            config=config,
+            workdir=workdir,
+            logfile=os.path.join(cls_results_path, 'lago.log'),
+            loglevel=logging.DEBUG
+        )
+    except PrefixAlreadyExists:
+        lago_env = sdk.load_env(
+            workdir=workdir,
+            logfile=os.path.join(cls_results_path, 'lago.log'),
+            loglevel=logging.DEBUG
+        )
+    lago_env.start()
+
+    yield lago_env
+
+    # Task: Add log collection. The logs should be collected to a
+    # sub directory of 'cls_result_path
+    pytest.raises('Implement me')
+    # EndTask
+
+
+@pytest.fixture(scope='class')
+def jenkins_master(env):
+    vms = env.get_vms()
+    return vms['jenkins-master']
+
+
+@pytest.fixture(scope='module')
+def jenkins_info():
+    return {'port': 8080, 'username': 'admin', 'password': 'admin'}
 
 
 class Job:
@@ -18,43 +63,35 @@ class Job:
 
     @property
     def latest_art_path(self):
-        return '/var/lib/jenkins/jobs/{}/lastSuccessful/archive/'.format(self.name)
-
-
-@pytest.fixture(scope='module')
-def jenkins_info():
-    return {
-        'port': 8080,
-        'username': 'admin',
-        'password': 'admin'
-    }
-
-
-@pytest.fixture(scope='class')
-def env(cls_results_path):
-    # Your implementation goes here...
-    pytest.skip('Not implemented')
+        return '/var/lib/jenkins/jobs/{}/lastSuccessful/archive/'.format(
+            self.name
+        )
 
 
 class TestDeployJenkins(object):
-    @pytest.fixture
-    def jenkins_master(self, env):
-        vms = env.get_vms()
-        return vms['jenkins-master']
-
-    @pytest.mark.lab_1
+    @pytest.mark.lab_2
     def test_deploy_with_ansible(self, env, jenkins_master):
-        # Your implementation goes here...
-        pytest.skip('Not implemented')
+        # Task: verify that jenkins_master is reachable through ssh
+        pytest.raises('Implement me')
+        # EndTask
+        result = testlib.deploy_ansible_playbook(
+            env, 'ansible/jenkins_playbook.yaml'
+        )
+        if result:
+            print result.err
+            raise AssertionError
 
 
 class TestJenkins(object):
     @pytest.fixture(scope='class')
     def jobs(self):
         return {
-            'blank_job': Job('blank_job'),
-            'dev_job': Job('dev_job', label='dev', xml_path='jobs/labeled_job.xml'),
-            'qa_job': Job('qa_job', label='qa')
+            'blank_job':
+                Job('blank_job'),
+            'dev_job':
+                Job('dev_job', label='dev', xml_path='jobs/labeled_job.xml'),
+            'qa_job':
+                Job('qa_job', label='qa')
         }
 
     @pytest.fixture(scope='class')
@@ -67,9 +104,7 @@ class TestJenkins(object):
 
     @pytest.fixture(scope='class')
     def labels(self, jobs):
-        return sorted(
-            map(lambda job: job.label, jobs.values())
-        )
+        return sorted(map(lambda job: job.label, jobs.values()))
 
     @pytest.fixture(scope='class')
     def plugins(self):
@@ -82,23 +117,55 @@ class TestJenkins(object):
         )
 
     @pytest.fixture('class')
-    def jenkins_api(self, env, jenkins_info):
-        # Your implementation goes here...
-        pytest.skip('Not implemented')
-
-    @pytest.mark.lab_2
-    def test_basic_api_connection(self, jenkins_api):
-        # Your implementation goes here...
-        pytest.skip('Not implemented')
+    def jenkins_api(self, jenkins_info, jenkins_master):
+        # Task: Get jenkins master ip and assign it to a variable called jenkins_master_ip
+        jenkins_master_ip = jenkins_master.ip()
+        # EndTask
+        return jenkins.Jenkins(
+            'http://{ip}:{port}'.format(
+                ip=jenkins_master_ip, port=jenkins_info['port']
+            ),
+            username=jenkins_info['username'],
+            password=jenkins_info['password']
+        )
 
     @pytest.mark.lab_3
+    def test_basic_api_connection(
+        self, jenkins_api, jenkins_master, jenkins_info
+    ):
+        def _test_api():
+            user = jenkins_api.get_whoami()
+            version = jenkins_api.get_version()
+            print('Hello {} from Jenkins {}'.format(user['fullName'], version))
+            print(
+                'You can access the web UI with:\nhttp://{}:{}'.format(
+                    jenkins_master.ip(), jenkins_info['port']
+                )
+            )
+
+            return True
+
+        allowed_exceptions = [
+            jenkins.BadHTTPException, jenkins.JenkinsException,
+            jenkins.TimeoutException
+        ]
+
+        # Task: assert _test_api ends successfully within a short timeout
+        # allowing 'allowed_exceptions'
+        testlib.assert_true_within_short(
+            _test_api,
+            allowed_exceptions=allowed_exceptions
+        )
+        # EndTask
+
+    @pytest.mark.lab_4
     def test_verify_installed_plugins(self, jenkins_api, plugins):
         installed_plugins = jenkins_api.get_plugins()
 
         for plugin in plugins:
             assert plugin in installed_plugins
 
-    @pytest.mark.lab_3
+    @pytest.mark.lab_4
     def test_add_slaves(self, jenkins_api, env, cred_uuid):
         def add_slave(hostname, label):
             if jenkins_api.node_exists(hostname):
@@ -123,16 +190,35 @@ class TestJenkins(object):
 
             return True
 
-        # Your implementation goes here...
-        pytest.skip('Not implemented')
+        # Task: Create a list of tuples where each tuple contains
+        # a vm name and it's jenkins label, for example (vm-0, dev)
+        # Recall that only vms in group 'jenkins-slaves' has a label
+        pytest.raises('Implement me')
+        slaves_and_labels = []
+        # EndTask
 
+        vec = lago.utils.func_vector(add_slave, slaves_and_labels)
+        vt = lago.utils.VectorThread(vec)
+        vt.start_all()
+        assert all(vt.join_all())
 
-    @pytest.mark.lab_4
+        for slave, _ in slaves_and_labels:
+            testlib.assert_true_within_short(
+                functools.partial(jenkins_api.node_exists, slave)
+            )
+            testlib.assert_true_within_short(
+                lambda: not jenkins_api.get_node_info(slave)['offline']
+            )
+
+    @pytest.mark.lab_5
     def test_throw_exception_on_undefined_job(self, jenkins_api):
-        # Your implementation goes here...
-        pytest.skip('Not implemented')
+        # Task: assert that 'jenkins.JenkinsException' exception is thrown
+        # when trying to access a job that doesn't exists
+        # Use 'jenkins_api.get_job_info(JOB_NAME) to get a job's info
+        pytest.raises('Implement me')
+        # EndTask
 
-    @pytest.mark.lab_4
+    @pytest.mark.lab_5
     def test_create_labled_job(self, jenkins_api, dev_job):
         if jenkins_api.job_exists(dev_job.name):
             return True
@@ -146,15 +232,44 @@ class TestJenkins(object):
 
     @pytest.mark.lab_5
     def test_trigger_labeled_job(self, jenkins_api, env, dev_job):
-        # Your implementation goes here...
-        pytest.skip('Not implemented')
+        labeled_nodes = [
+            vm.name() for vm in env.get_vms().viewvalues()
+            if vm.metadata.get('jenkins-label') == dev_job.label
+        ]
+        dev_job_info = jenkins_api.get_job_info(dev_job.name)
+        next_build_number = dev_job_info['nextBuildNumber']
+        jenkins_api.build_job(dev_job.name)
+
+        def assert_job_run_on_labeled_slave(
+            job, build_number, optional_slaves
+        ):
+            build_info = jenkins_api.get_build_info(job, build_number)
+            assert build_info['builtOn'] in optional_slaves
+
+        allowed_exceptions = [jenkins.NotFoundException]
+
+        # Task: invoke 'assert_job_run_on_labeled_slave' and allow
+        # it to throw exceptions within a short timeout.
+        # The allowed exceptions are the ones who are in 'allowed exceptions'
+        # Hint: Use functools.partial
+        pytest.raises('Implement me')
+        # EndTask
 
     @pytest.mark.lab_6
-    def test_collect_and_verify_artifacts_from_master(self, tmpdir, env, dev_job):
+    def test_collect_and_verify_artifacts_from_master(
+        self, tmpdir, jenkins_master, dev_job
+    ):
         local_artifact_path = os.path.join(str(tmpdir), 'dummy_artifact')
+        remote_artifact_path = os.path.join(dev_job.latest_art_path, 'dummy_artifact')
 
-        # Your implementation goes here...
-        pytest.skip('Not implemented')
+        # Task: Create a function 'f' which copies the artifacts from 'remote_artifact_path'
+        # on jenkins_master to 'local_artifact_path'
+        # Hint: Use functools.partial and the instance method 'copy_from'
+        pytest.raises('Implement me')
+        f = None
+        # EndTask
+
+        testlib.allow_exceptions_within_short(f, [scp.SCPException])
 
         with open(local_artifact_path, mode='rt') as f:
             result = f.read()
