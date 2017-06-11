@@ -1,0 +1,11 @@
+slide, name, link
+2, setup_tools_issue, https://github.com/pypa/setuptools/issues/1042
+3, gals_github, https://github.com/gbenhaim
+3, nadavs_github, https://github.com/nvgoldin
+5, workshop_repo, https://github.com/lago-project/lago-workshop.git
+10, lago_docs, http://lago.readthedocs.io/en/latest/
+14, lab_notebook, https://github.com/lago-project/lago-workshop/blob/master/intro/lago_workshop_lab1-3.ipynb
+16, production_jenkins_example, http://jenkins.ovirt.org/
+17, pytest_examples, https://docs.pytest.org/en/latest/fixture.html
+25, lago_repo, http://github.com/lago-project/lago
+26, mailing_list, lago-devel@ovirt.org
