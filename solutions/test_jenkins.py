@@ -216,8 +216,12 @@ class TestJenkins(object):
 
     @pytest.mark.lab_5
     def test_throw_exception_on_undefined_job(self, jenkins_api):
+        # Task: assert that 'jenkins.JenkinsException' exception is thrown
+        # when trying to access a job that doesn't exists
+        # Use 'jenkins_api.get_job_info(JOB_NAME) to get a job's info
         with pytest.raises(jenkins.JenkinsException):
             jenkins_api.get_job_info('undefined_job')
+        # EndTask
 
     @pytest.mark.lab_5
     def test_create_labled_job(self, jenkins_api, dev_job):
