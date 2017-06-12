@@ -1,10 +1,10 @@
 About
 -----
 This is an example of how to write system tests using Lago and Pytest.
-Tests are located in test_jenkins.yaml.
+Tests are located in ``test_jenkins.py``
 Helper functions are located in testlib.py.
 The deployment of the env will be done using Ansible (it will be called as part of the tests),
-The playbook location is../ansible/jenkins_playbook.yaml.
+The playbook location is at ``../ansible/jenkins_playbook.yaml``
 
 
 The environment
