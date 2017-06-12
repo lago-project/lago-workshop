@@ -6,6 +6,8 @@ About
 In this workshop you will learn how to create system tests
 for your application using Lago and Pytest.
 
+Slides available `here`_.
+
 Prerequisite
 --------------
 - `Install Lago <https://github.com/lago-project/lago-demo/blob/master/install_scripts/install_lago.sh?>`_
@@ -17,3 +19,6 @@ Prerequisite
      virtualenv --system-site-packages lago_venv
      source lago_venv/bin/activate
      pip install -I -r requirements.txt
+
+
+.. _`here`: http://redhat.slides.com/nadavgoldin/lago-pycon-il-2017-4?token=ungYJg-5
