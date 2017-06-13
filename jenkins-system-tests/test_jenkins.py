@@ -119,7 +119,8 @@ class TestJenkins(object):
     @pytest.fixture('class')
     def jenkins_api(self, jenkins_info, jenkins_master):
         # Task: Get jenkins master ip and assign it to a variable called jenkins_master_ip
-        jenkins_master_ip = jenkins_master.ip()
+        jenkins_master_ip = None
+        pytest.raises('Implement me')
         # EndTask
         return jenkins.Jenkins(
             'http://{ip}:{port}'.format(
@@ -152,10 +153,7 @@ class TestJenkins(object):
 
         # Task: assert _test_api ends successfully within a short timeout
         # allowing 'allowed_exceptions'
-        testlib.assert_true_within_short(
-            _test_api,
-            allowed_exceptions=allowed_exceptions
-        )
+        pytest.raises('Implement me')
         # EndTask
 
     @pytest.mark.lab_4
