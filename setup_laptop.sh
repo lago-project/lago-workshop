@@ -53,10 +53,9 @@ function install_in_venv() {
     cd jenkins-system-tests
     pytest -x -vvv -s ../solutions/test_jenkins.py::TestDeployJenkins
     cd ..
-    cd /tmp/lago-workdir
+    cd /home/lab/backup/lago-workdir
     lago stop
     cd ..
-    mv lago-workdir "$backup_path/"
     echo "$backup_path/lago-workdir" > "$HOME/workshop_backup_path.txt"
     popd
     deactivate
