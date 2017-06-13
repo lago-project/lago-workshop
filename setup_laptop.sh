@@ -2,7 +2,8 @@
 
 # internal script to setup the Lago workshop on Fedora 25
 # assumes Lago is already installed
-readonly backup_path="$HOME/.backup_workshop"
+readonly backup_path_old="$HOME/.backup_workshop"
+readonly backup_path="$HOME/backup"
 readonly git_repo="https://github.com/lago-project/lago-workshop.git"
 readonly venv_name="lago_workshop"
 
@@ -40,10 +41,10 @@ function setup_venv() {
 }
 
 function install_in_venv() {
-    source `which virtualenvwrapper.sh`
-    export WORKON_HOME="$HOME/virtualenv"
+    source "$(which virtualenvwrapper.sh)"
     source "$HOME/virtualenv/$venv_name/bin/activate"
     rm -rf "$backup_path"
+    rm -rf "$backup_path_old"
     mkdir -p "$backup_path"
     pushd "$backup_path"
     git clone "$git_repo"
@@ -52,12 +53,11 @@ function install_in_venv() {
     cd jenkins-system-tests
     pytest -x -vvv -s ../solutions/test_jenkins.py::TestDeployJenkins
     cd ..
-    rm -rf "$backup_path/live-env"
-    mkdir -p "$backup_path/live-env"
     cd /tmp/lago-workdir
     lago stop
     cd ..
-    mv lago-workdir "$backup_path/live-env/"
+    mv lago-workdir "$backup_path/"
+    echo "$backup_path/lago-workdir" > "$HOME/workshop_backup_path.txt"
     popd
     deactivate
 }
