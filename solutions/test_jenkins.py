@@ -19,8 +19,12 @@ In order to run this tests cd into jenkins-system-tests and run:
 @pytest.fixture(scope='class')
 def env(cls_results_path):
     config = 'init-jenkins.yaml'
-    # workdir = '/tmp/lago-workdir'
+
+    # used to setup a backup environment for the lab
     workdir = '/home/lab/backup/lago-workdir'
+    os.environ['LAGO_PREFIX_PATH'] = '/home/lab/backup/lago-workdir/current'
+    # this how it should really look like:
+    # workdir = '/tmp/lago-workdir'
 
     try:
         lago_env = sdk.init(

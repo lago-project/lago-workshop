@@ -14,10 +14,12 @@ import logging
 def env(cls_results_path):
     config = 'init-jenkins.yaml'
 
-    # Task: change to
-    #   workdir='/home/lab/backup/lago-workdir'
-    # if there are connectivity problems.
+    # Task:
+    # if there will be connectivity problems, replace 'workdir=' line with:
+    # workdir='/home/lab/backup/lago-workdir'
+    # os.environ['LAGO_PREFIX_PATH'] = '/home/lab/backup/lago-workdir/current'
     workdir = '/tmp/lago-workdir'
+    # EndTask
 
     raise NotImplementedError('Implement me')
 
@@ -42,6 +44,10 @@ def env(cls_results_path):
     # sub directory of 'cls_result_path
 
     # EndTask
+
+    # Normally we would call 'lago_env.destroy()' here, but for educational
+    # purposes only, we are keeping the environment up between runs, so we
+    # could write/run the tests interactively.
 
 
 @pytest.fixture(scope='class')
@@ -258,7 +264,9 @@ class TestJenkins(object):
         self, tmpdir, jenkins_master, dev_job
     ):
         local_artifact_path = os.path.join(str(tmpdir), 'dummy_artifact')
-        remote_artifact_path = os.path.join(dev_job.latest_art_path, 'dummy_artifact')
+        remote_artifact_path = os.path.join(
+            dev_job.latest_art_path, 'dummy_artifact'
+        )
 
         # Task: Create a function 'f' which copies the artifacts from 'remote_artifact_path'
         # on jenkins_master to 'local_artifact_path'
