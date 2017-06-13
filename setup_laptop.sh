@@ -24,8 +24,10 @@ function install_deps() {
 }
 
 function install_atom() {
-    wget -O /tmp/atom.rpm https://atom.io/download/rpm
-    sudo dnf install -y /tmp/atom.rpm
+    if ! rpm -q atom &> /dev/null; then
+        wget -O /tmp/atom.rpm https://atom.io/download/rpm
+        sudo dnf install -y /tmp/atom.rpm
+    fi
 }
 
 
@@ -41,6 +43,7 @@ function install_in_venv() {
     source `which virtualenvwrapper.sh`
     export WORKON_HOME="$HOME/virtualenv"
     source "$HOME/virtualenv/$venv_name/bin/activate"
+    rm -rf "$backup_path"
     mkdir -p "$backup_path"
     pushd "$backup_path"
     git clone "$git_repo"
