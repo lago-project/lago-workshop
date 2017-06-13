@@ -8,18 +8,14 @@ import testlib
 import functools
 import scp
 import logging
-'''
-
-In order to run this tests cd into jenkins-system-tests and run:
-    python -m pytest -s -v -x ../solutions/test_jenkins.py
-
-'''
 
 
 @pytest.fixture(scope='class')
 def env(cls_results_path):
     config = 'init-jenkins.yaml'
     workdir = '/tmp/lago-workdir'
+
+    raise NotImplementedError('Implement me')
 
     try:
         lago_env = sdk.init(
@@ -40,7 +36,7 @@ def env(cls_results_path):
 
     # Task: Add log collection. The logs should be collected to a
     # sub directory of 'cls_result_path
-    pytest.raises('Implement me')
+
     # EndTask
 
 
@@ -72,7 +68,7 @@ class TestDeployJenkins(object):
     @pytest.mark.lab_2
     def test_deploy_with_ansible(self, env, jenkins_master):
         # Task: verify that jenkins_master is reachable through ssh
-        pytest.raises('Implement me')
+        raise NotImplementedError('Implement me')
         # EndTask
         result = testlib.deploy_ansible_playbook(
             env, 'ansible/jenkins_playbook.yaml'
@@ -120,7 +116,7 @@ class TestJenkins(object):
     def jenkins_api(self, jenkins_info, jenkins_master):
         # Task: Get jenkins master ip and assign it to a variable called jenkins_master_ip
         jenkins_master_ip = None
-        pytest.raises('Implement me')
+        raise NotImplementedError('Implement me')
         # EndTask
         return jenkins.Jenkins(
             'http://{ip}:{port}'.format(
@@ -153,7 +149,7 @@ class TestJenkins(object):
 
         # Task: assert _test_api ends successfully within a short timeout
         # allowing 'allowed_exceptions'
-        pytest.raises('Implement me')
+        raise NotImplementedError('Implement me')
         # EndTask
 
     @pytest.mark.lab_4
@@ -191,7 +187,7 @@ class TestJenkins(object):
         # Task: Create a list of tuples where each tuple contains
         # a vm name and it's jenkins label, for example (vm-0, dev)
         # Recall that only vms in group 'jenkins-slaves' has a label
-        pytest.raises('Implement me')
+        raise NotImplementedError('Implement me')
         slaves_and_labels = []
         # EndTask
 
@@ -213,7 +209,7 @@ class TestJenkins(object):
         # Task: assert that 'jenkins.JenkinsException' exception is thrown
         # when trying to access a job that doesn't exists
         # Use 'jenkins_api.get_job_info(JOB_NAME) to get a job's info
-        pytest.raises('Implement me')
+        raise NotImplementedError('Implement me')
         # EndTask
 
     @pytest.mark.lab_5
@@ -250,7 +246,7 @@ class TestJenkins(object):
         # it to throw exceptions within a short timeout.
         # The allowed exceptions are the ones who are in 'allowed exceptions'
         # Hint: Use functools.partial
-        pytest.raises('Implement me')
+        raise NotImplementedError('Implement me')
         # EndTask
 
     @pytest.mark.lab_6
@@ -263,7 +259,7 @@ class TestJenkins(object):
         # Task: Create a function 'f' which copies the artifacts from 'remote_artifact_path'
         # on jenkins_master to 'local_artifact_path'
         # Hint: Use functools.partial and the instance method 'copy_from'
-        pytest.raises('Implement me')
+        raise NotImplementedError('Implement me')
         f = None
         # EndTask
 
