@@ -13,6 +13,10 @@ import logging
 @pytest.fixture(scope='class')
 def env(cls_results_path):
     config = 'init-jenkins.yaml'
+
+    # Task: change to
+    #   workdir='/home/lab/backup/lago-workdir'
+    # if there are connectivity problems.
     workdir = '/tmp/lago-workdir'
 
     raise NotImplementedError('Implement me')
