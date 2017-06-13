@@ -1,15 +1,16 @@
 #!/bin/bash -ex
 
-# Internal script for the workshop to setup all dependencies on a fresh
-# Fedora 25 machine
-readonly pkg_manager=$(dnf)
+# internal script to setup the Lago workshop on Fedora 25
+# assumes Lago is already installed
 readonly backup_path="$HOME/.backup_workshop"
 readonly git_repo="https://github.com/lago-project/lago-workshop.git"
 readonly venv_name="lago_workshop"
 
+
 function update_sys() {
     sudo dnf update -y
 }
+
 
 function install_deps() {
     sudo dnf install -y gcc python2 python2-devel python2-epi \
@@ -20,8 +21,6 @@ function install_deps() {
     sudo dnf copr enable -y heikoada/terminix
     sudo dnf install -y tilix
 
-    # pycharm
-
 }
 
 function install_atom() {
@@ -31,6 +30,7 @@ function install_atom() {
 
 
 function setup_venv() {
+    rm -rf "$HOME/virtualenv"
     mkdir -p "$HOME/virtualenv"
     virtualenv --system-site-packages "$HOME/virtualenv/$venv_name"
     echo "export WORKON_HOME=$HOME/virtualenv" >> "$HOME/.bashrc"
@@ -49,7 +49,8 @@ function install_in_venv() {
     cd jenkins-system-tests
     pytest -x -vvv -s ../solutions/test_jenkins.py::TestDeployJenkins
     cd ..
-    mkdir -p "$backup_path/live-env/"
+    rm -rf "$backup_path/live-env"
+    mkdir -p "$backup_path/live-env"
     cd /tmp/lago-workdir
     lago stop
     cd ..
@@ -60,6 +61,7 @@ function install_in_venv() {
 
 
 function main() {
+    rm -rf "$HOME/lago-workshop"
     update_sys
     install_deps
     install_atom
